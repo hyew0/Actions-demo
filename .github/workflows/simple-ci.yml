@@ -1,0 +1,28 @@
+name: simple spring ci
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: ☕ Set up Java 21
+        uses: actions/setup-java@v3
+        with:
+            distribution: 'temurin'
+            java-version: '21'
+
+      - name: 🛠️ Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: 🔨 Build with Gradle
+        run: ./gradlew build
+
+      - name: ✅ Done!
+        run: echo "🎉 Spring Boot 프로젝트 빌드 및 테스트 완료!"
