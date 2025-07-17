@@ -1,28 +1,39 @@
-name: simple spring ci
+name: simple spring ci # workflow name
 
 on:
   push:
     branches: ["main"]
+# main 브랜치에 코드가 push될 때마다 실행
 
 jobs:
   build:
     runs-on: ubuntu-latest
+# build 라는 작업(job)을 정의하고, github가 제공하는 ubuntu 리눅스 서버에서 실행
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        # GitHub Actions가 저장소 코드를 서버에 다운로드함.
 
       - name: ☕ Set up Java 21
         uses: actions/setup-java@v3
         with:
             distribution: 'temurin'
             java-version: '21'
+        # Java 21을 설치함 (Gradle이 Java로 되어 있으니까 필요해).
 
       - name: 🛠️ Grant execute permission for gradlew
         run: chmod +x ./gradlew
+        # gradlew 파일(Gradle 실행 스크립트)에 실행 권한을 부여함 (리눅스에서 필요해).
 
       - name: 🔨 Build with Gradle
         run: ./gradlew build
+        #프로젝트를 Gradle로 빌드함.
+        #이 명령어는 코드 컴파일 + 테스트 실행까지 자동으로 수행함.
 
       - name: ✅ Done!
         run: echo "🎉 Spring Boot 프로젝트 빌드 및 테스트 완료!"
+        # 마지막으로 성공 메시지 출력함.
+
+# CI는 코드가 저장소에 올라올 때마다 자동으로 빌드하고 테스트해서 문제 없는지 확인하는 과정.
+# 빌드 깨진 코드, 테스트 실패하는 코드가 main 브랜치에 합쳐지는 걸 방지할 수 있다.
