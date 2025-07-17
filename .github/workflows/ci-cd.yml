@@ -1,0 +1,62 @@
+name: Web IDE Backend CI/CD
+
+# 워크플로우 실행 조건
+on:
+  push:
+    branches:
+      - main        # main 브랜치에 push될 때 실행됨
+  pull_request:
+    branches:
+      - main        # main 브랜치로 PR이 열릴 때도 실행됨
+
+# 환경 변수 정의 (Secrets로 민감 정보 관리)
+env:
+  AWS_REGION: ap-northeast-2                    # AWS 리전 (필요시 확장용)
+  EC2_HOST: ${{ secrets.EC2_HOST }}             # EC2 퍼블릭 IP 또는 도메인 (Secrets에 등록)
+  EC2_USER: ubuntu                              # EC2 사용자 이름 (ex. ubuntu)
+  PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}       # EC2에 접근할 SSH 개인 키
+  BACKEND_IMAGE: webide-backend                 # Docker 이미지 이름
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }} # Docker Hub ID
+  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }} # Docker Hub 비밀번호
+
+jobs:
+  backend-deploy:
+    runs-on: ubuntu-latest                      # GitHub에서 제공하는 Ubuntu 환경에서 실행
+
+    steps:
+      # 1. 소스코드 체크아웃
+      - name: 🔄 Checkout source code
+        uses: actions/checkout@v3
+        # 저장소의 최신 코드를 받아옴
+
+      # 2. Docker Hub 로그인
+      - name: 🔐 Docker Hub 로그인
+        run: echo "${{ env.DOCKER_PASSWORD }}" | docker login -u "${{ env.DOCKER_USERNAME }}" --password-stdin
+        # Docker Hub에 로그인하여 이미지를 push할 수 있도록 인증
+
+      # 3. 백엔드 Docker 이미지 빌드 및 Docker Hub에 Push
+      - name: 🐳 Backend Docker 이미지 빌드 및 푸시
+        run: |
+          docker build -t $DOCKER_USERNAME/$BACKEND_IMAGE:latest -f docker/backend.Dockerfile ./backend
+          docker push $DOCKER_USERNAME/$BACKEND_IMAGE:latest
+        # ./backend 폴더에 있는 소스를 기반으로 docker/backend.Dockerfile을 이용해 이미지 생성
+        # 이미지 태그: webide-backend:latest
+        # 생성한 이미지를 Docker Hub에 업로드
+
+      # 4. EC2 서버에 SSH로 접속 후 백엔드 컨테이너 배포
+      - name: 🚀 EC2에 SSH 접속 및 Backend 배포
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ env.EC2_HOST }}
+          username: ${{ env.EC2_USER }}
+          key: ${{ env.PRIVATE_KEY }}
+          script: |
+            docker pull $DOCKER_USERNAME/$BACKEND_IMAGE:latest
+            # 최신 이미지를 Docker Hub에서 EC2로 pull
+
+            docker stop webide-backend || true && docker rm webide-backend || true
+            # 이전에 실행 중이던 컨테이너가 있으면 중지하고 제거 (없어도 에러 안 남)
+
+            docker run -d --name webide-backend -p 8080:8080 $DOCKER_USERNAME/$BACKEND_IMAGE:latest
+            # 새로 받은 이미지를 기반으로 컨테이너 실행
+            # EC2의 8080 포트를 컨테이너의 8080에 연결

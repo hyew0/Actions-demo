@@ -2,7 +2,7 @@ name: simple spring ci # workflow name
 
 on:
   push:
-    branches: ["main"]
+    branches: ["develop"]
 # main 브랜치에 코드가 push될 때마다 실행
 
 jobs:
