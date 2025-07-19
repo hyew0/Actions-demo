@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # CI(지속적 통합) 단계
       # 1. GitHub 코드 체크아웃
       - name: 🔄 Checkout source code
         uses: actions/checkout@v3
@@ -34,15 +35,16 @@ jobs:
           docker build -t $DOCKER_USERNAME/$BACKEND_IMAGE:latest -f Dockerfile .
           docker push $DOCKER_USERNAME/$BACKEND_IMAGE:latest
 
-      # 4. EC2에 SSH로 접속해 배포
-      - name: 🚀 EC2 배포 (컨테이너 교체)
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ env.EC2_HOST }}
-          username: ${{ env.EC2_USER }}
-          key: ${{ env.PRIVATE_KEY }}
-          script: |
-            docker pull $DOCKER_USERNAME/$BACKEND_IMAGE:latest
-            docker stop webide-backend || true
-            docker rm webide-backend || true
-            docker run -d --name webide-backend -p 8080:8080 $DOCKER_USERNAME/$BACKEND_IMAGE:latest
+#      # CD(지속적 배포) 단계
+#      # 4. EC2에 SSH로 접속해 배포
+#      - name: 🚀 EC2 배포 (컨테이너 교체)
+#        uses: appleboy/ssh-action@v1.0.0
+#        with:
+#          host: ${{ env.EC2_HOST }}
+#          username: ${{ env.EC2_USER }}
+#          key: ${{ env.PRIVATE_KEY }}
+#          script: |
+#            docker pull $DOCKER_USERNAME/$BACKEND_IMAGE:latest
+#            docker stop webide-backend || true
+#            docker rm webide-backend || true
+#            docker run -d --name webide-backend -p 8080:8080 $DOCKER_USERNAME/$BACKEND_IMAGE:latest
